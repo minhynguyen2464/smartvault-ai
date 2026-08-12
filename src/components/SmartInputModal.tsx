@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Transaction, CurrencyCode, AccountType } from '../types';
 import { formatMoneyInput, parseMoneyInput } from '../utils/formatters';
 import {
@@ -60,16 +60,14 @@ export const SmartInputModal: React.FC<SmartInputModalProps> = ({
   const [manualAmount, setManualAmount] = useState<string>('');
   const [manualType, setManualType] = useState<'expense' | 'income'>('expense');
   const [manualMerchant, setManualMerchant] = useState<string>('');
-  const [manualCategory, setManualCategory] = useState<string>('Food & Drink');
-  const [manualAccountType, setManualAccountType] = useState<AccountType>(defaultAccountType);
   const [manualDate, setManualDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [manualNotes, setManualNotes] = useState<string>('');
   const [manualIsSubscription, setManualIsSubscription] = useState<boolean>(false);
 
-  // Default Categories List
+  // Default Categories List (Sorted Descending)
   const DEFAULT_CATEGORIES = Array.from(
-    new Set([
-      ...(customCategories && customCategories.length > 0
+    new Set(
+      customCategories && customCategories.length > 0
         ? customCategories
         : [
             'Food & Drink',
@@ -86,9 +84,20 @@ export const SmartInputModal: React.FC<SmartInputModalProps> = ({
             'Healthcare',
             'Travel',
             'Other',
-          ]),
-    ])
+          ]
+    )
+  ).sort((a, b) => b.localeCompare(a));
+
+  const [manualCategory, setManualCategory] = useState<string>(
+    DEFAULT_CATEGORIES[0] || 'Food & Dining'
   );
+
+  // Synchronize manualCategory if current selection is no longer in available categories
+  useEffect(() => {
+    if (DEFAULT_CATEGORIES.length > 0 && !DEFAULT_CATEGORIES.includes(manualCategory)) {
+      setManualCategory(DEFAULT_CATEGORIES[0]);
+    }
+  }, [DEFAULT_CATEGORIES, manualCategory]);
 
   // Receipt image state
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -167,7 +176,7 @@ export const SmartInputModal: React.FC<SmartInputModalProps> = ({
       category: finalCategory,
       date: manualDate || new Date().toISOString().split('T')[0],
       type: manualType,
-      accountType: manualAccountType,
+      accountType: 'personal',
       invoiceStatus: 'none',
       notes: manualNotes,
       isSubscription: manualIsSubscription,
@@ -230,7 +239,7 @@ export const SmartInputModal: React.FC<SmartInputModalProps> = ({
       category: extractedTx.category || 'Food & Dining',
       date: extractedTx.date || new Date().toISOString().split('T')[0],
       type: (extractedTx.type as 'expense' | 'income') || 'expense',
-      accountType: (extractedTx.accountType as AccountType) || defaultAccountType,
+      accountType: 'personal',
       invoiceStatus: extractedTx.invoiceStatus || 'none',
       invoiceNumber: extractedTx.invoiceNumber || '',
       clientName: extractedTx.clientName || '',
@@ -384,112 +393,119 @@ export const SmartInputModal: React.FC<SmartInputModalProps> = ({
                 />
               </div>
 
-              {/* Category & Scope */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-medium text-slate-300 block">Category</label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsManagingCategories(!isManagingCategories)}
-                        className={`text-[10px] font-medium flex items-center gap-1 transition ${
-                          isManagingCategories ? 'text-amber-400 underline' : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <Settings className="w-3 h-3" />
-                        <span>{isManagingCategories ? 'Close Manage' : 'Manage / Remove'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCreatingCustomCat(!isCreatingCustomCat);
-                          setCustomCategoryText('');
-                        }}
-                        className="text-[10px] text-emerald-400 hover:underline font-semibold"
-                      >
-                        {isCreatingCustomCat ? 'Select existing' : '+ Custom'}
-                      </button>
+              {/* Notes / Description (Optional) - Placed directly below Merchant / Payee / Client */}
+              <div>
+                <label className="text-xs font-medium text-slate-300 block mb-1">Notes / Description (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Coffee meeting with design team"
+                  value={manualNotes}
+                  onChange={(e) => setManualNotes(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Category */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-slate-300 block">Category</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsManagingCategories(!isManagingCategories)}
+                      className={`text-[10px] font-medium flex items-center gap-1 transition ${
+                        isManagingCategories ? 'text-amber-400 underline' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Settings className="w-3 h-3" />
+                      <span>{isManagingCategories ? 'Close Manage' : 'Manage / Remove'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingCustomCat(!isCreatingCustomCat);
+                        setCustomCategoryText('');
+                      }}
+                      className="text-[10px] text-emerald-400 hover:underline font-semibold"
+                    >
+                      {isCreatingCustomCat ? 'Select existing' : '+ Custom'}
+                    </button>
+                  </div>
+                </div>
+
+                {isManagingCategories ? (
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 max-h-48 overflow-y-auto">
+                    <div className="text-[11px] text-slate-400 flex items-center justify-between border-b border-slate-800 pb-1.5">
+                      <span>Remove category:</span>
+                      {onOpenCategoryManager && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenCategoryManager('expense')}
+                          className="text-emerald-400 text-[10px] hover:underline"
+                        >
+                          Open Full Manager &rarr;
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {DEFAULT_CATEGORIES.map((cat) => (
+                        <div
+                          key={cat}
+                          className="px-2 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-200 flex items-center gap-1.5"
+                        >
+                          <span>{cat}</span>
+                          {onRemoveExpenseCategory && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const catToRemove = cat;
+                                await onRemoveExpenseCategory(catToRemove);
+                                if (manualCategory === catToRemove) {
+                                  const remaining = DEFAULT_CATEGORIES.filter((c) => c !== catToRemove);
+                                  if (remaining.length > 0) {
+                                    setManualCategory(remaining[0]);
+                                  }
+                                }
+                              }}
+                              className="text-slate-500 hover:text-rose-400 transition p-0.5"
+                              title={`Remove "${cat}" category`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-
-                  {isManagingCategories ? (
-                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 max-h-48 overflow-y-auto">
-                      <div className="text-[11px] text-slate-400 flex items-center justify-between border-b border-slate-800 pb-1.5">
-                        <span>Remove category:</span>
-                        {onOpenCategoryManager && (
-                          <button
-                            type="button"
-                            onClick={() => onOpenCategoryManager('expense')}
-                            className="text-emerald-400 text-[10px] hover:underline"
-                          >
-                            Open Full Manager &rarr;
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {DEFAULT_CATEGORIES.map((cat) => (
-                          <div
-                            key={cat}
-                            className="px-2 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-200 flex items-center gap-1.5"
-                          >
-                            <span>{cat}</span>
-                            {onRemoveExpenseCategory && (
-                              <button
-                                type="button"
-                                onClick={() => onRemoveExpenseCategory(cat)}
-                                className="text-slate-500 hover:text-rose-400 transition p-0.5"
-                                title={`Remove "${cat}" category`}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : isCreatingCustomCat ? (
-                    <input
-                      type="text"
-                      placeholder="Type custom category name..."
-                      value={customCategoryText}
-                      onChange={(e) => setCustomCategoryText(e.target.value)}
-                      className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-                  ) : (
-                    <select
-                      value={manualCategory}
-                      onChange={(e) => {
-                        if (e.target.value === '__CUSTOM__') {
-                          setIsCreatingCustomCat(true);
-                          setCustomCategoryText('');
-                        } else {
-                          setManualCategory(e.target.value);
-                        }
-                      }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    >
-                      {DEFAULT_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      <option value="__CUSTOM__">+ Create New Category...</option>
-                    </select>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">Account Scope</label>
+                ) : isCreatingCustomCat ? (
+                  <input
+                    type="text"
+                    placeholder="Type custom category name..."
+                    value={customCategoryText}
+                    onChange={(e) => setCustomCategoryText(e.target.value)}
+                    className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                ) : (
                   <select
-                    value={manualAccountType}
-                    onChange={(e) => setManualAccountType(e.target.value as AccountType)}
+                    value={manualCategory}
+                    onChange={(e) => {
+                      if (e.target.value === '__CUSTOM__') {
+                        setIsCreatingCustomCat(true);
+                        setCustomCategoryText('');
+                      } else {
+                        setManualCategory(e.target.value);
+                      }
+                    }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="personal">Personal Expenses</option>
-                    <option value="business">Business / Freelance</option>
+                    {DEFAULT_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM__">+ Create New Category...</option>
                   </select>
-                </div>
+                )}
               </div>
 
               {/* Date & Recurring Checkbox */}
@@ -516,18 +532,6 @@ export const SmartInputModal: React.FC<SmartInputModalProps> = ({
                     Recurring Subscription
                   </label>
                 </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="text-xs font-medium text-slate-300 block mb-1">Notes / Description (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Coffee meeting with design team"
-                  value={manualNotes}
-                  onChange={(e) => setManualNotes(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
               </div>
 
               {/* Submit Button */}
@@ -742,23 +746,6 @@ export const SmartInputModal: React.FC<SmartInputModalProps> = ({
                       <option value="__CUSTOM__">+ Create New Category...</option>
                     </select>
                   )}
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-slate-500 block">Account / Scope</label>
-                  <select
-                    value={extractedTx.accountType || defaultAccountType}
-                    onChange={(e) =>
-                      setExtractedTx({
-                        ...extractedTx,
-                        accountType: e.target.value as AccountType,
-                      })
-                    }
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 font-medium text-white"
-                  >
-                    <option value="personal">Personal Expenses</option>
-                    <option value="business">Business / Freelance</option>
-                  </select>
                 </div>
               </div>
 

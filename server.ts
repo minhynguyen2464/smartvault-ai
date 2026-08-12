@@ -208,14 +208,24 @@ async function startServer() {
       const newCat = category.trim();
       const status = getDbStatus();
       if (status.connected) {
-        const updatedDoc = await UserSettingsModel.findOneAndUpdate(
-          { userId: 'default_user' } as any,
-          { $addToSet: { expenseCategories: newCat }, $pull: { removedCategories: newCat } },
-          { upsert: true, new: true }
-        ).lean();
-        return res.json({ success: true, source: 'mongodb', expenseCategories: updatedDoc.expenseCategories });
+        let settings = await UserSettingsModel.findOne({ userId: 'default_user' });
+        if (!settings) {
+          settings = await UserSettingsModel.create({
+            userId: 'default_user',
+            expenseCategories: DEFAULT_EXPENSE_CATEGORIES,
+            removedCategories: [],
+          });
+        }
+        if (!settings.expenseCategories.some((c: string) => c.toLowerCase() === newCat.toLowerCase())) {
+          settings.expenseCategories.push(newCat);
+        }
+        settings.removedCategories = (settings.removedCategories || []).filter(
+          (c: string) => c.toLowerCase() !== newCat.toLowerCase()
+        );
+        await settings.save();
+        return res.json({ success: true, source: 'mongodb', expenseCategories: settings.expenseCategories });
       }
-      if (!inMemExpenseCategories.includes(newCat)) {
+      if (!inMemExpenseCategories.some((c) => c.toLowerCase() === newCat.toLowerCase())) {
         inMemExpenseCategories.push(newCat);
       }
       return res.json({ success: true, source: 'in-memory', expenseCategories: inMemExpenseCategories });
@@ -227,17 +237,30 @@ async function startServer() {
 
   app.delete('/api/categories/:category', async (req, res) => {
     try {
-      const { category } = req.params;
+      const rawCategory = req.params.category;
+      const targetCategory = decodeURIComponent(rawCategory).trim();
       const status = getDbStatus();
       if (status.connected) {
-        const updatedDoc = await UserSettingsModel.findOneAndUpdate(
-          { userId: 'default_user' } as any,
-          { $pull: { expenseCategories: category }, $addToSet: { removedCategories: category } },
-          { upsert: true, new: true }
-        ).lean();
-        return res.json({ success: true, source: 'mongodb', expenseCategories: updatedDoc.expenseCategories });
+        let settings = await UserSettingsModel.findOne({ userId: 'default_user' });
+        if (!settings) {
+          settings = await UserSettingsModel.create({
+            userId: 'default_user',
+            expenseCategories: DEFAULT_EXPENSE_CATEGORIES,
+            removedCategories: [],
+          });
+        }
+        settings.expenseCategories = (settings.expenseCategories || []).filter(
+          (c: string) => c.trim().toLowerCase() !== targetCategory.toLowerCase()
+        );
+        if (!settings.removedCategories.includes(targetCategory)) {
+          settings.removedCategories.push(targetCategory);
+        }
+        await settings.save();
+        return res.json({ success: true, source: 'mongodb', expenseCategories: settings.expenseCategories });
       }
-      inMemExpenseCategories = inMemExpenseCategories.filter((c) => c !== category);
+      inMemExpenseCategories = inMemExpenseCategories.filter(
+        (c) => c.trim().toLowerCase() !== targetCategory.toLowerCase()
+      );
       return res.json({ success: true, source: 'in-memory', expenseCategories: inMemExpenseCategories });
     } catch (err: any) {
       console.error('Error removing category:', err);

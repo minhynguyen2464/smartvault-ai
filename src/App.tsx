@@ -28,6 +28,7 @@ import {
   updateBudgetCapsApi,
   deleteBudgetCapApi,
 } from './lib/api';
+import { DEFAULT_EXPENSE_CATEGORIES } from './data/initialData';
 
 import { LayoutDashboard, BarChart3, Receipt, ShieldCheck } from 'lucide-react';
 
@@ -78,13 +79,11 @@ export default function App() {
     loadInitialData();
   }, [loadInitialData]);
 
-  // Derive all active categories
-  const activeExpenseCategories = Array.from(
-    new Set([
-      ...expenseCategories,
-      ...budgetCaps.map((b) => b.category),
-    ])
-  );
+  // Active expense categories list driven by expenseCategories state
+  const activeExpenseCategories =
+    expenseCategories.length > 0
+      ? expenseCategories
+      : DEFAULT_EXPENSE_CATEGORIES;
 
   // Handlers for Categories
   const handleAddExpenseCategory = async (category: string) => {
@@ -100,6 +99,12 @@ export default function App() {
     try {
       const updated = await deleteExpenseCategoryApi(category);
       setExpenseCategories(updated);
+
+      // Clean up matching budget cap if one exists for this category so it doesn't persist stale caps
+      if (budgetCaps.some((b) => b.category.toLowerCase() === category.toLowerCase())) {
+        const updatedCaps = await deleteBudgetCapApi(category);
+        setBudgetCaps(updatedCaps);
+      }
     } catch (err) {
       console.error('Error removing expense category:', err);
     }
@@ -129,19 +134,9 @@ export default function App() {
       console.error('Error saving transaction to API:', err);
     }
 
-    // Automatically ensure budget cap tracking entry exists if category is new
-    if (newTx.category && !budgetCaps.some((b) => b.category.toLowerCase() === newTx.category.toLowerCase())) {
-      const updatedCaps = [
-        ...budgetCaps,
-        {
-          category: newTx.category,
-          limit: 3000000,
-          color: '#10b981',
-          icon: 'Tag',
-        },
-      ];
-      setBudgetCaps(updatedCaps);
-      updateBudgetCapsApi(updatedCaps).catch((e) => console.error(e));
+    // Save new category to expenseCategories if it's a custom category not yet in the list
+    if (newTx.category && !expenseCategories.some((c) => c.toLowerCase() === newTx.category.toLowerCase())) {
+      handleAddExpenseCategory(newTx.category);
     }
   };
 

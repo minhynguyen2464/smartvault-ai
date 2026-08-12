@@ -67,8 +67,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   }, [transaction]);
 
   const DEFAULT_CATEGORIES = Array.from(
-    new Set([
-      ...(customCategories && customCategories.length > 0
+    new Set(
+      customCategories && customCategories.length > 0
         ? customCategories
         : [
             'Food & Drink',
@@ -85,9 +85,9 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             'Healthcare',
             'Travel',
             'Other',
-          ]),
-    ])
-  );
+          ]
+    )
+  ).sort((a, b) => b.localeCompare(a));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

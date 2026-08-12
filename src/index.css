@@ -7,9 +7,9 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Financial numbers & tabular figures format for bank-grade alignment using Figtree */
+  /* Financial numbers & tabular figures format for bank-grade alignment using Segoe UI */
   .font-mono, [class*="font-mono"] {
-    font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Segoe UI', Consolas, -apple-system, BlinkMacSystemFont, monospace, sans-serif;
     font-variant-numeric: tabular-nums;
   }
 }
