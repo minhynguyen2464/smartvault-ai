@@ -209,6 +209,14 @@ const UserSettingsSchema = new Schema(
   { timestamps: true }
 );
 
+const SecretSchema = new Schema(
+  {
+    name: { type: String, default: 'site_secret', unique: true },
+    value: { type: String, required: true },
+  },
+  { timestamps: true, collection: 'secret' }
+);
+
 const TransactionModel: mongoose.Model<any> =
   mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 
@@ -217,6 +225,9 @@ const BudgetCapModel: mongoose.Model<any> =
 
 const UserSettingsModel: mongoose.Model<any> =
   mongoose.models.UserSettings || mongoose.model('UserSettings', UserSettingsSchema);
+
+const SecretModel: mongoose.Model<any> =
+  mongoose.models.Secret || mongoose.model('Secret', SecretSchema, 'secret');
 
 // Database Connection Manager
 let isConnected = false;
@@ -294,6 +305,43 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/db-status', async (req, res) => {
   await ensureDb();
   res.json(getDbStatus());
+});
+
+app.post('/api/verify-secret', async (req, res) => {
+  try {
+    await ensureDb();
+    const { secret } = req.body;
+    if (!secret && secret !== '') {
+      return res.status(400).json({ success: false, verified: false, error: 'Secret passcode is required' });
+    }
+
+    const inputSecret = String(secret).trim();
+    const status = getDbStatus();
+    let expectedSecret = '2464';
+
+    if (status.connected) {
+      try {
+        let secretDoc = await SecretModel.findOne().lean();
+        if (!secretDoc) {
+          secretDoc = await SecretModel.create({ name: 'site_secret', value: '2464' });
+        }
+        if (secretDoc && secretDoc.value) {
+          expectedSecret = String(secretDoc.value).trim();
+        }
+      } catch (dbErr) {
+        console.error('Error fetching secret from MongoDB:', dbErr);
+      }
+    }
+
+    if (inputSecret === expectedSecret) {
+      return res.json({ success: true, verified: true, message: 'Access granted' });
+    } else {
+      return res.status(403).json({ success: false, verified: false, error: 'Forbidden: Incorrect secret passcode' });
+    }
+  } catch (err: any) {
+    console.error('Error verifying secret:', err);
+    res.status(500).json({ success: false, verified: false, error: 'Server error verifying passcode' });
+  }
 });
 
 app.get('/api/transactions', async (req, res) => {

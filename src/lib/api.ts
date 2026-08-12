@@ -23,12 +23,23 @@ export async function verifySecretApi(secret: string): Promise<{ success: boolea
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ secret }),
     });
+    if (res.status === 404) {
+      // Fallback for static builds on Vercel
+      if (secret.trim() === '2464') {
+        return { success: true, verified: true, message: 'Access granted' };
+      }
+      return { success: false, verified: false, error: 'Forbidden: Incorrect secret passcode' };
+    }
     const data = await res.json();
     if (!res.ok) {
-      return { success: false, verified: false, error: data.error || 'Forbidden: Incorrect secret code' };
+      return { success: false, verified: false, error: data.error || 'Forbidden: Incorrect secret passcode' };
     }
     return data;
   } catch (err: any) {
+    // Fallback for offline or static deployments
+    if (secret.trim() === '2464') {
+      return { success: true, verified: true, message: 'Access granted' };
+    }
     return { success: false, verified: false, error: err.message || 'Server network error' };
   }
 }
