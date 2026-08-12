@@ -245,16 +245,34 @@ export const SubscriptionLendLoanManager: React.FC<SubscriptionLendLoanManagerPr
       setSubForm({ name: '', cost: '', billingCycle: 'monthly', category: 'Entertainment', nextBillingDate: new Date().toISOString().split('T')[0], notes: '' });
     } else if (addType === 'lent') {
       if (!lentForm.borrowerName || !lentForm.amount) return;
+      const lentAmount = parseFloat(lentForm.amount) || 0;
+      const todayStr = new Date().toISOString().split('T')[0];
+
       onAddLentRecord({
         borrowerName: lentForm.borrowerName,
-        amount: parseFloat(lentForm.amount) || 0,
+        amount: lentAmount,
         currency,
-        dateLent: new Date().toISOString().split('T')[0],
+        dateLent: todayStr,
         dueDate: lentForm.dueDate,
         notes: lentForm.notes,
         status: 'unpaid',
       });
-      showToast(`Money lent record for "${lentForm.borrowerName}" added successfully!`);
+
+      // Record initial money lent outflow transaction in Ledger
+      onRecordPaymentTransaction({
+        amount: lentAmount,
+        currency,
+        merchant: `Lent to ${lentForm.borrowerName}`,
+        category: 'Money Lent / Loans Out',
+        date: todayStr,
+        type: 'expense',
+        accountType: 'personal',
+        notes: `Money lent to ${lentForm.borrowerName} (${lentForm.notes || 'Lent out'})`,
+        tags: ['Money Lent', 'Outflow', 'Receivable'],
+        rawLogSource: 'manual',
+      });
+
+      showToast(`Money lent record for "${lentForm.borrowerName}" added! Outflow of ${symbol}${lentAmount.toLocaleString()} logged in Ledger and deducted from account balance.`);
       setLentForm({ borrowerName: '', amount: '', dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], notes: '' });
     } else if (addType === 'loan') {
       if (!loanForm.lenderName || !loanForm.totalBalance || !loanForm.monthlyPayment) return;
@@ -322,7 +340,7 @@ export const SubscriptionLendLoanManager: React.FC<SubscriptionLendLoanManagerPr
             <span>Recurring Subscriptions</span>
             <CreditCard className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono">
+          <div className="text-xl sm:text-2xl font-extrabold text-emerald-400" style={{ fontFamily: "'Segoe UI', sans-serif", fontWeight: 800 }}>
             {symbol}{totalMonthlySubCost.toLocaleString()}<span className="text-xs text-slate-400 font-normal">/mo</span>
           </div>
           <p className="text-[10px] text-slate-500">{activeSubs.length} active recurring services</p>
@@ -334,7 +352,7 @@ export const SubscriptionLendLoanManager: React.FC<SubscriptionLendLoanManagerPr
             <span>Money Lent (Owed to Me)</span>
             <HandCoins className="w-4 h-4 text-teal-400" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-teal-400 font-mono">
+          <div className="text-xl sm:text-2xl font-extrabold text-teal-400" style={{ fontFamily: "'Segoe UI', sans-serif", fontWeight: 800 }}>
             {symbol}{totalMoneyLentPending.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-500">{pendingLent.length} pending borrower repayments</p>
@@ -346,7 +364,7 @@ export const SubscriptionLendLoanManager: React.FC<SubscriptionLendLoanManagerPr
             <span>Loans & Debts (I Owe)</span>
             <Landmark className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-rose-400 font-mono">
+          <div className="text-xl sm:text-2xl font-extrabold text-rose-400" style={{ fontFamily: "'Segoe UI', sans-serif", fontWeight: 800 }}>
             {symbol}{totalLoanBalance.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-500">{symbol}{totalMonthlyLoanObligation.toLocaleString()}/mo monthly debt obligations</p>
@@ -362,7 +380,7 @@ export const SubscriptionLendLoanManager: React.FC<SubscriptionLendLoanManagerPr
               <ArrowDownLeft className="w-4 h-4 text-amber-400" />
             )}
           </div>
-          <div className={`text-xl sm:text-2xl font-extrabold font-mono ${netBalanceExposure >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+          <div className={`text-xl sm:text-2xl font-extrabold ${netBalanceExposure >= 0 ? 'text-emerald-400' : 'text-amber-400'}`} style={{ fontFamily: "'Segoe UI', sans-serif", fontWeight: 800 }}>
             {netBalanceExposure >= 0 ? '+' : ''}{symbol}{netBalanceExposure.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-500">
