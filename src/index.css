@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.012em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Financial numbers & tabular figures format for bank-grade alignment using Figtree */
+  .font-mono, [class*="font-mono"] {
+    font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+}

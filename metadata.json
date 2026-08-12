@@ -1,0 +1,6 @@
+{
+  "name": "SmartVault AI",
+  "description": "Lightweight, AI-first personal finance tracker with multimodal expense logging, cash-flow analytics, budget caps, and tax export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
