@@ -44,7 +44,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const today = new Date();
-  const [viewMode, setViewMode] = useState<'month' | 'rolling30'>('month');
   const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth()); // 0-indexed (0=Jan, 11=Dec)
 
@@ -73,7 +72,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       setCurrentMonth(0);
       setCurrentYear((y) => y + 1);
     } else {
-      setCurrentMonth((m) => m - 1);
+      setCurrentMonth((m) => m + 1);
     }
   };
 
@@ -92,32 +91,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     isToday: boolean;
   }
 
-  // Generate days based on selected month or rolling 30 days
+  // Generate days based on selected month
   const getDaysForCalendar = (): { paddingDays: number; days: CalendarDay[] } => {
-    if (viewMode === 'rolling30') {
-      const days: CalendarDay[] = [];
-      const now = new Date();
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(now.getDate() - i);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const dateStr = `${yyyy}-${mm}-${dd}`;
-        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-        const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-
-        days.push({
-          dateStr,
-          dayNum: d.getDate(),
-          monthName,
-          fullLabel: `${dayName}, ${monthName} ${d.getDate()}`,
-          isToday: i === 0,
-        });
-      }
-      return { paddingDays: 0, days };
-    }
-
     // Full calendar month mode
     const firstDay = new Date(currentYear, currentMonth, 1);
     const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -215,79 +190,53 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
         </div>
 
-        {/* View Mode Toggle & Month Navigation */}
+        {/* Month Navigation & Reset */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           
-          {/* Mode Switcher */}
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px] sm:text-xs">
+          {/* Month & Year Navigation */}
+          <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800">
             <button
-              onClick={() => setViewMode('month')}
-              className={`px-2.5 py-1.5 sm:px-3 rounded-lg font-bold transition-all ${
-                viewMode === 'month'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
+              onClick={handlePrevMonth}
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Previous Month"
             >
-              Month View
+              <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-            <button
-              onClick={() => setViewMode('rolling30')}
-              className={`px-2.5 py-1.5 sm:px-3 rounded-lg font-bold transition-all ${
-                viewMode === 'rolling30'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
+
+            {/* Month Dropdown */}
+            <select
+              value={currentMonth}
+              onChange={(e) => setCurrentMonth(Number(e.target.value))}
+              className="bg-transparent text-white font-bold text-xs cursor-pointer focus:outline-none pr-0.5"
             >
-              Last 30 Days
+              {MONTH_NAMES.map((name, idx) => (
+                <option key={name} value={idx} className="bg-slate-900 text-white">
+                  {name}
+                </option>
+              ))}
+            </select>
+
+            {/* Year Dropdown */}
+            <select
+              value={currentYear}
+              onChange={(e) => setCurrentYear(Number(e.target.value))}
+              className="bg-transparent text-emerald-400 font-extrabold text-xs cursor-pointer focus:outline-none"
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y} className="bg-slate-900 text-white">
+                  {y}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={handleNextMonth}
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Next Month"
+            >
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
-
-          {/* Month & Year Navigation (Only active when in Month view) */}
-          {viewMode === 'month' && (
-            <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800">
-              <button
-                onClick={handlePrevMonth}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                title="Previous Month"
-              >
-                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-
-              {/* Month Dropdown */}
-              <select
-                value={currentMonth}
-                onChange={(e) => setCurrentMonth(Number(e.target.value))}
-                className="bg-transparent text-white font-bold text-xs cursor-pointer focus:outline-none pr-0.5"
-              >
-                {MONTH_NAMES.map((name, idx) => (
-                  <option key={name} value={idx} className="bg-slate-900 text-white">
-                    {name}
-                  </option>
-                ))}
-              </select>
-
-              {/* Year Dropdown */}
-              <select
-                value={currentYear}
-                onChange={(e) => setCurrentYear(Number(e.target.value))}
-                className="bg-transparent text-emerald-400 font-extrabold text-xs cursor-pointer focus:outline-none"
-              >
-                {yearOptions.map((y) => (
-                  <option key={y} value={y} className="bg-slate-900 text-white">
-                    {y}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                onClick={handleNextMonth}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                title="Next Month"
-              >
-                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            </div>
-          )}
 
           {/* Reset to Today Button */}
           <button
@@ -306,9 +255,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="font-bold text-white text-xs sm:text-sm">
-            {viewMode === 'month'
-              ? `${MONTH_NAMES[currentMonth]} ${currentYear} Summary`
-              : 'Last 30 Days Summary'}
+            {MONTH_NAMES[currentMonth]} {currentYear} Summary
           </span>
         </div>
 
@@ -362,15 +309,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
             
             {/* Blank Padding cells before day 1 */}
-            {viewMode === 'month' &&
-              Array.from({ length: paddingDays }).map((_, idx) => (
-                <div
-                  key={`padding-${idx}`}
-                  className="p-1.5 sm:p-2.5 rounded-2xl bg-slate-950/20 border border-slate-900/50 opacity-30 min-h-[65px] sm:min-h-[90px]"
-                />
-              ))}
+            {Array.from({ length: paddingDays }).map((_, idx) => (
+              <div
+                key={`padding-${idx}`}
+                className="p-1.5 sm:p-2.5 rounded-2xl bg-slate-950/20 border border-slate-900/50 opacity-30 min-h-[65px] sm:min-h-[90px]"
+              />
+            ))}
 
-            {/* Month / 30-Day Day Cells */}
+            {/* Month Day Cells */}
             {daysList.map((day) => {
               const dayData = txByDateMap[day.dateStr];
               const hasIncome = dayData && dayData.income > 0;
@@ -406,7 +352,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           : 'text-slate-300'
                       }`}
                     >
-                      {day.dayNum} {viewMode === 'rolling30' ? day.monthName : ''}
+                      {day.dayNum}
                     </span>
 
                     {dayData && dayData.txs.length > 0 && (

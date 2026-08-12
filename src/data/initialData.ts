@@ -1,4 +1,4 @@
-import { Transaction, CategoryBudget, SubscriptionItem, AdvisorInsight } from '../types';
+import { Transaction, CategoryBudget, SubscriptionItem, LentRecord, LoanRecord, AdvisorInsight } from '../types';
 
 export const INITIAL_TRANSACTIONS: Transaction[] = [
   {
@@ -149,7 +149,8 @@ export const INITIAL_SUBSCRIPTIONS: SubscriptionItem[] = [
     currency: 'VND',
     billingCycle: 'monthly',
     nextBillingDate: '2026-09-02',
-    category: 'Tech & Infrastructure'
+    category: 'Tech & Infrastructure',
+    status: 'active'
   },
   {
     id: 'sub-2',
@@ -158,7 +159,8 @@ export const INITIAL_SUBSCRIPTIONS: SubscriptionItem[] = [
     currency: 'VND',
     billingCycle: 'monthly',
     nextBillingDate: '2026-09-03',
-    category: 'Entertainment'
+    category: 'Entertainment',
+    status: 'active'
   },
   {
     id: 'sub-3',
@@ -167,7 +169,8 @@ export const INITIAL_SUBSCRIPTIONS: SubscriptionItem[] = [
     currency: 'VND',
     billingCycle: 'monthly',
     nextBillingDate: '2026-09-05',
-    category: 'Tech & Infrastructure'
+    category: 'Tech & Infrastructure',
+    status: 'active'
   },
   {
     id: 'sub-4',
@@ -177,7 +180,76 @@ export const INITIAL_SUBSCRIPTIONS: SubscriptionItem[] = [
     billingCycle: 'monthly',
     nextBillingDate: '2026-09-10',
     category: 'Health',
+    status: 'active',
     flaggedUnused: true
+  }
+];
+
+export const INITIAL_LENT_RECORDS: LentRecord[] = [
+  {
+    id: 'lent-1',
+    borrowerName: 'Alex Chen',
+    amount: 5000000,
+    currency: 'VND',
+    dateLent: '2026-07-15',
+    dueDate: '2026-08-15',
+    notes: 'Co-working event venue deposit',
+    status: 'unpaid'
+  },
+  {
+    id: 'lent-2',
+    borrowerName: 'Sarah Nguyen',
+    amount: 1200000,
+    currency: 'VND',
+    dateLent: '2026-08-01',
+    dueDate: '2026-08-10',
+    notes: 'Design software license share',
+    status: 'paid',
+    settledDate: '2026-08-08'
+  },
+  {
+    id: 'lent-3',
+    borrowerName: 'David Miller',
+    amount: 8500000,
+    currency: 'VND',
+    dateLent: '2026-07-20',
+    dueDate: '2026-08-20',
+    notes: 'Freelance camera equipment loan',
+    status: 'unpaid'
+  }
+];
+
+export const INITIAL_LOAN_RECORDS: LoanRecord[] = [
+  {
+    id: 'loan-1',
+    lenderName: 'Techcombank Auto Loan',
+    totalBalance: 120000000,
+    monthlyPayment: 5500000,
+    currency: 'VND',
+    dueDate: '25th of month',
+    interestRate: 7.5,
+    notes: 'Vehicle financing',
+    status: 'active'
+  },
+  {
+    id: 'loan-2',
+    lenderName: 'Citi Credit Card Balance',
+    totalBalance: 15000000,
+    monthlyPayment: 3000000,
+    currency: 'VND',
+    dueDate: '18th of month',
+    notes: 'Monthly statement statement debt',
+    status: 'active'
+  },
+  {
+    id: 'loan-3',
+    lenderName: 'Family Emergency Fund Loan',
+    totalBalance: 10000000,
+    monthlyPayment: 2000000,
+    currency: 'VND',
+    dueDate: '30th of month',
+    notes: 'Personal loan from uncle',
+    status: 'active'
   }
 ];
 

@@ -4,7 +4,7 @@ import { DashboardOverview } from './components/DashboardOverview';
 import { AnalyticsCharts } from './components/AnalyticsCharts';
 import { TransactionList } from './components/TransactionList';
 import { BudgetCapsModal } from './components/BudgetCapsModal';
-import { FreelancerInvoiceTracker } from './components/FreelancerInvoiceTracker';
+import { SubscriptionLendLoanManager } from './components/SubscriptionLendLoanManager';
 import { SmartInputModal } from './components/SmartInputModal';
 import { ExportModal } from './components/ExportModal';
 import { EditTransactionModal } from './components/EditTransactionModal';
@@ -13,7 +13,10 @@ import { CategoryManagerModal } from './components/CategoryManagerModal';
 import {
   Transaction,
   CategoryBudget,
-  CurrencyCode
+  CurrencyCode,
+  SubscriptionItem,
+  LentRecord,
+  LoanRecord,
 } from './types';
 
 import {
@@ -28,9 +31,14 @@ import {
   updateBudgetCapsApi,
   deleteBudgetCapApi,
 } from './lib/api';
-import { DEFAULT_EXPENSE_CATEGORIES } from './data/initialData';
+import {
+  DEFAULT_EXPENSE_CATEGORIES,
+  INITIAL_SUBSCRIPTIONS,
+  INITIAL_LENT_RECORDS,
+  INITIAL_LOAN_RECORDS,
+} from './data/initialData';
 
-import { LayoutDashboard, BarChart3, Receipt, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Receipt, Repeat } from 'lucide-react';
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -38,6 +46,70 @@ export default function App() {
   const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
   const [currency, setCurrency] = useState<CurrencyCode>('VND');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Subscriptions, Lent & Loan Records local state
+  const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>(() => {
+    const saved = localStorage.getItem('fin_subscriptions');
+    return saved ? JSON.parse(saved) : INITIAL_SUBSCRIPTIONS;
+  });
+
+  const [lentRecords, setLentRecords] = useState<LentRecord[]>(() => {
+    const saved = localStorage.getItem('fin_lent_records');
+    return saved ? JSON.parse(saved) : INITIAL_LENT_RECORDS;
+  });
+
+  const [loanRecords, setLoanRecords] = useState<LoanRecord[]>(() => {
+    const saved = localStorage.getItem('fin_loan_records');
+    return saved ? JSON.parse(saved) : INITIAL_LOAN_RECORDS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fin_subscriptions', JSON.stringify(subscriptions));
+  }, [subscriptions]);
+
+  useEffect(() => {
+    localStorage.setItem('fin_lent_records', JSON.stringify(lentRecords));
+  }, [lentRecords]);
+
+  useEffect(() => {
+    localStorage.setItem('fin_loan_records', JSON.stringify(loanRecords));
+  }, [loanRecords]);
+
+  // Subscription Handlers
+  const handleUpdateSubscription = (updated: SubscriptionItem) => {
+    setSubscriptions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+  };
+  const handleAddSubscription = (newSub: Omit<SubscriptionItem, 'id'>) => {
+    const item: SubscriptionItem = { ...newSub, id: `sub-${Date.now()}` };
+    setSubscriptions((prev) => [item, ...prev]);
+  };
+  const handleDeleteSubscription = (id: string) => {
+    setSubscriptions((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  // Lent Record Handlers
+  const handleUpdateLentRecord = (updated: LentRecord) => {
+    setLentRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  };
+  const handleAddLentRecord = (newRecord: Omit<LentRecord, 'id'>) => {
+    const item: LentRecord = { ...newRecord, id: `lent-${Date.now()}` };
+    setLentRecords((prev) => [item, ...prev]);
+  };
+  const handleDeleteLentRecord = (id: string) => {
+    setLentRecords((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // Loan Record Handlers
+  const handleUpdateLoanRecord = (updated: LoanRecord) => {
+    setLoanRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  };
+  const handleAddLoanRecord = (newRecord: Omit<LoanRecord, 'id'>) => {
+    const item: LoanRecord = { ...newRecord, id: `loan-${Date.now()}` };
+    setLoanRecords((prev) => [item, ...prev]);
+  };
+  const handleDeleteLoanRecord = (id: string) => {
+    setLoanRecords((prev) => prev.filter((r) => r.id !== id));
+  };
 
   // Modals
   const [isSmartInputOpen, setIsSmartInputOpen] = useState(false);
@@ -53,7 +125,7 @@ export default function App() {
   };
 
   // Active Navigation Tab inside App
-  const [activeNav, setActiveNav] = useState<'dashboard' | 'analytics' | 'transactions' | 'freelance'>('dashboard');
+  const [activeNav, setActiveNav] = useState<'dashboard' | 'transactions' | 'freelance'>('dashboard');
 
   // Load Data from Backend API
   const loadInitialData = useCallback(async () => {
@@ -244,17 +316,6 @@ export default function App() {
               <span>Overview</span>
             </button>
             <button
-              onClick={() => setActiveNav('analytics')}
-              className={`px-3 py-2 rounded-lg font-semibold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
-                activeNav === 'analytics'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Analytics</span>
-            </button>
-            <button
               onClick={() => setActiveNav('transactions')}
               className={`px-3 py-2 rounded-lg font-semibold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
                 activeNav === 'transactions'
@@ -273,8 +334,8 @@ export default function App() {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Invoices & Tax</span>
+              <Repeat className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Subscriptions, Lend & Loans</span>
             </button>
           </div>
         </div>
@@ -309,16 +370,6 @@ export default function App() {
               </div>
             )}
 
-            {activeNav === 'analytics' && (
-              <div className="space-y-8">
-                <AnalyticsCharts
-                  transactions={transactions}
-                  currency={currency}
-                  onOpenSmartInput={() => setIsSmartInputOpen(true)}
-                />
-              </div>
-            )}
-
             {activeNav === 'transactions' && (
               <TransactionList
                 transactions={transactions}
@@ -331,11 +382,21 @@ export default function App() {
             )}
 
             {activeNav === 'freelance' && (
-              <FreelancerInvoiceTracker
-                transactions={transactions}
-                onUpdateInvoiceStatus={handleUpdateInvoiceStatus}
+              <SubscriptionLendLoanManager
                 currency={currency}
-                onOpenSmartInput={() => setIsSmartInputOpen(true)}
+                subscriptions={subscriptions}
+                lentRecords={lentRecords}
+                loanRecords={loanRecords}
+                onUpdateSubscription={handleUpdateSubscription}
+                onAddSubscription={handleAddSubscription}
+                onDeleteSubscription={handleDeleteSubscription}
+                onUpdateLentRecord={handleUpdateLentRecord}
+                onAddLentRecord={handleAddLentRecord}
+                onDeleteLentRecord={handleDeleteLentRecord}
+                onUpdateLoanRecord={handleUpdateLoanRecord}
+                onAddLoanRecord={handleAddLoanRecord}
+                onDeleteLoanRecord={handleDeleteLoanRecord}
+                onRecordPaymentTransaction={handleAddTransaction}
               />
             )}
           </>

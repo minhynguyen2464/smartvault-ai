@@ -38,7 +38,35 @@ export interface SubscriptionItem {
   billingCycle: 'monthly' | 'yearly';
   nextBillingDate: string;
   category: string;
+  status?: 'active' | 'paused' | 'cancelled';
+  lastPaidDate?: string;
   flaggedUnused?: boolean;
+  notes?: string;
+}
+
+export interface LentRecord {
+  id: string;
+  borrowerName: string;
+  amount: number;
+  currency: CurrencyCode;
+  dateLent: string;
+  dueDate: string;
+  notes?: string;
+  status: 'unpaid' | 'paid';
+  settledDate?: string;
+}
+
+export interface LoanRecord {
+  id: string;
+  lenderName: string;
+  totalBalance: number;
+  monthlyPayment: number;
+  currency: CurrencyCode;
+  dueDate: string;
+  interestRate?: number;
+  notes?: string;
+  status: 'active' | 'paid_off';
+  lastPaymentDate?: string;
 }
 
 export interface AdvisorInsight {

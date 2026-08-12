@@ -27,7 +27,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
   currency,
   onOpenSmartInput,
 }) => {
-  const [activeTab, setActiveTab] = useState<'cashflow' | 'category' | 'calendar'>('cashflow');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'category' | 'cashflow'>('calendar');
 
   const symbolMap: Record<CurrencyCode, string> = {
     USD: '$',
@@ -162,21 +162,21 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
         <div>
           <h3 className="font-bold text-white text-base flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-emerald-400" />
-            <span>7-Day Cash-Flow Analytics</span>
+            <span>Calendar & Financial Analytics</span>
           </h3>
-          <p className="text-xs text-slate-400">Visual breakdown of 7-day cash flow & monthly category expenses</p>
+          <p className="text-xs text-slate-400">Visual breakdown of calendar, category breakdown & 7-day cash flow</p>
         </div>
 
         <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1 text-xs">
           <button
-            onClick={() => setActiveTab('cashflow')}
+            onClick={() => setActiveTab('calendar')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              activeTab === 'cashflow'
+              activeTab === 'calendar'
                 ? 'bg-emerald-500 text-slate-950 font-bold'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            7-Day Cash Flow
+            Calendar View
           </button>
           <button
             onClick={() => setActiveTab('category')}
@@ -189,55 +189,28 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
             Category Breakdown
           </button>
           <button
-            onClick={() => setActiveTab('calendar')}
+            onClick={() => setActiveTab('cashflow')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              activeTab === 'calendar'
+              activeTab === 'cashflow'
                 ? 'bg-emerald-500 text-slate-950 font-bold'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            30-Day Calendar View
+            7-Day Cash Flow
           </button>
         </div>
       </div>
 
-      {/* Chart View 1: 7-Day Cash Flow Trends */}
-      {activeTab === 'cashflow' && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-            <span className="text-slate-300 font-medium">
-              Showing cash movement for the last <strong className="text-emerald-400">7 active days</strong>
-            </span>
-            <div className="flex items-center gap-3 font-mono">
-              <span className="text-emerald-400 font-bold">
-                7-Day Inflow: +{symbol}{sevenDayIncome.toLocaleString()}
-              </span>
-              <span className="text-rose-400 font-bold">
-                7-Day Outflow: -{symbol}{sevenDayExpense.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          <div className="h-64 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sevenDayCashFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="date" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(val) => `${symbol}${val}`} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
-                  formatter={(val: any) => [`${symbol}${Number(val).toLocaleString()}`, '']}
-                />
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Bar dataKey="income" name="7-Day Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="7-Day Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      {/* Chart View 1: 30-Day Calendar View */}
+      {activeTab === 'calendar' && (
+        <CalendarView
+          transactions={transactions}
+          currency={currency}
+          onOpenSmartInput={onOpenSmartInput}
+        />
       )}
 
-      {/* Chart View 2: Invoice Category Breakdown (Reset Monthly with Hover Totals) */}
+      {/* Chart View 2: Invoice Category Breakdown */}
       {activeTab === 'category' && (
         <div className="space-y-4">
           
@@ -380,13 +353,40 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
         </div>
       )}
 
-      {/* Chart View 3: 30-Day Calendar View */}
-      {activeTab === 'calendar' && (
-        <CalendarView
-          transactions={transactions}
-          currency={currency}
-          onOpenSmartInput={onOpenSmartInput}
-        />
+      {/* Chart View 3: 7-Day Cash Flow Trends */}
+      {activeTab === 'cashflow' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span className="text-slate-300 font-medium">
+              Showing cash movement for the last <strong className="text-emerald-400">7 active days</strong>
+            </span>
+            <div className="flex items-center gap-3 font-mono">
+              <span className="text-emerald-400 font-bold">
+                7-Day Inflow: +{symbol}{sevenDayIncome.toLocaleString()}
+              </span>
+              <span className="text-rose-400 font-bold">
+                7-Day Outflow: -{symbol}{sevenDayExpense.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          <div className="h-64 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sevenDayCashFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="date" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(val) => `${symbol}${val}`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+                  formatter={(val: any) => [`${symbol}${Number(val).toLocaleString()}`, '']}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar dataKey="income" name="7-Day Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="7-Day Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       )}
 
     </div>
