@@ -30,6 +30,7 @@ import {
   deleteTransactionApi,
   updateBudgetCapsApi,
   deleteBudgetCapApi,
+  verifySecretApi,
 } from './lib/api';
 import {
   DEFAULT_EXPENSE_CATEGORIES,
@@ -39,8 +40,41 @@ import {
 } from './data/initialData';
 
 import { LayoutDashboard, Receipt, Repeat } from 'lucide-react';
+import { LockScreen } from './components/LockScreen';
 
 export default function App() {
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    return sessionStorage.getItem('site_unlocked') === 'true';
+  });
+
+  useEffect(() => {
+    const savedPasscode = sessionStorage.getItem('site_passcode');
+    if (savedPasscode && !isUnlocked) {
+      verifySecretApi(savedPasscode).then((res) => {
+        if (res.verified) {
+          setIsUnlocked(true);
+          sessionStorage.setItem('site_unlocked', 'true');
+        } else {
+          sessionStorage.removeItem('site_unlocked');
+          sessionStorage.removeItem('site_passcode');
+          setIsUnlocked(false);
+        }
+      });
+    }
+  }, []);
+
+  const handleUnlockSuccess = (passcode: string) => {
+    setIsUnlocked(true);
+    sessionStorage.setItem('site_unlocked', 'true');
+    sessionStorage.setItem('site_passcode', passcode);
+  };
+
+  const handleLockSession = () => {
+    setIsUnlocked(false);
+    sessionStorage.removeItem('site_unlocked');
+    sessionStorage.removeItem('site_passcode');
+  };
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgetCaps, setBudgetCaps] = useState<CategoryBudget[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
@@ -274,12 +308,17 @@ export default function App() {
     }
   };
 
+  if (!isUnlocked) {
+    return <LockScreen onUnlockSuccess={handleUnlockSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
       
       {/* Top Navigation Bar */}
       <Navbar
         onOpenSmartInput={() => setIsSmartInputOpen(true)}
+        onLockSession={handleLockSession}
       />
 
       {/* Main Container */}

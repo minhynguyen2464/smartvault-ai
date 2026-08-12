@@ -16,6 +16,23 @@ export async function fetchDbStatus(): Promise<DbStatusResponse> {
   }
 }
 
+export async function verifySecretApi(secret: string): Promise<{ success: boolean; verified: boolean; message?: string; error?: string }> {
+  try {
+    const res = await fetch('/api/verify-secret', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, verified: false, error: data.error || 'Forbidden: Incorrect secret code' };
+    }
+    return data;
+  } catch (err: any) {
+    return { success: false, verified: false, error: err.message || 'Server network error' };
+  }
+}
+
 export async function fetchTransactions(): Promise<Transaction[]> {
   const res = await fetch('/api/transactions');
   if (!res.ok) throw new Error('Failed to fetch transactions');

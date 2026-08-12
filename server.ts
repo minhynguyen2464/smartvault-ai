@@ -3,7 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
-import { connectMongoDB, getDbStatus, TransactionModel, BudgetCapModel, UserSettingsModel, seedInitialDataIfEmpty } from './src/server/db';
+import { connectMongoDB, getDbStatus, TransactionModel, BudgetCapModel, UserSettingsModel, SecretModel, seedInitialDataIfEmpty } from './src/server/db';
 import { INITIAL_TRANSACTIONS, INITIAL_BUDGET_CAPS, DEFAULT_EXPENSE_CATEGORIES } from './src/data/initialData';
 
 dotenv.config();
@@ -49,6 +49,45 @@ async function startServer() {
 
   app.get('/api/db-status', (req, res) => {
     res.json(getDbStatus());
+  });
+
+  // Secret passcode verification endpoint (queries MongoDB collection "secret")
+  app.post('/api/verify-secret', async (req, res) => {
+    try {
+      const { secret } = req.body;
+      if (!secret && secret !== '') {
+        return res.status(400).json({ success: false, verified: false, error: 'Secret passcode is required' });
+      }
+
+      const inputSecret = String(secret).trim();
+      const status = getDbStatus();
+      let expectedSecret = '2464';
+
+      if (status.connected) {
+        try {
+          // Look up document in MongoDB collection 'secret'
+          let secretDoc = await SecretModel.findOne().lean();
+          if (!secretDoc) {
+            // Seed default "2464" if not existing
+            secretDoc = await SecretModel.create({ name: 'site_secret', value: '2464' });
+          }
+          if (secretDoc && secretDoc.value) {
+            expectedSecret = String(secretDoc.value).trim();
+          }
+        } catch (dbErr) {
+          console.error('Error fetching secret from MongoDB:', dbErr);
+        }
+      }
+
+      if (inputSecret === expectedSecret) {
+        return res.json({ success: true, verified: true, message: 'Access granted' });
+      } else {
+        return res.status(403).json({ success: false, verified: false, error: 'Forbidden: Incorrect secret passcode' });
+      }
+    } catch (err: any) {
+      console.error('Error verifying secret:', err);
+      res.status(500).json({ success: false, verified: false, error: 'Server error verifying passcode' });
+    }
   });
 
   // 2. Transactions REST API Endpoints (MongoDB backed with fallback)

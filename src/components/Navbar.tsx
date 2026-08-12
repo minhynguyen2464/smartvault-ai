@@ -1,12 +1,14 @@
 import React from 'react';
-import { Vault, PlusCircle } from 'lucide-react';
+import { Vault, PlusCircle, Lock } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSmartInput: () => void;
+  onLockSession?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenSmartInput,
+  onLockSession,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-slate-100">
@@ -32,6 +34,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Controls */}
         <div className="flex items-center gap-2">
+          {/* Lock Session button */}
+          {onLockSession && (
+            <button
+              onClick={onLockSession}
+              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
+              title="Lock Session"
+            >
+              <Lock className="w-4 h-4 text-slate-400" />
+              <span className="hidden sm:inline">Lock</span>
+            </button>
+          )}
+
           {/* Log Expense Trigger */}
           <button
             onClick={onOpenSmartInput}

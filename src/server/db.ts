@@ -45,6 +45,14 @@ const UserSettingsSchema = new Schema(
   { timestamps: true }
 );
 
+const SecretSchema = new Schema(
+  {
+    name: { type: String, default: 'site_secret', unique: true },
+    value: { type: String, required: true },
+  },
+  { timestamps: true, collection: 'secret' }
+);
+
 export const TransactionModel: mongoose.Model<any> =
   mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 
@@ -53,6 +61,9 @@ export const BudgetCapModel: mongoose.Model<any> =
 
 export const UserSettingsModel: mongoose.Model<any> =
   mongoose.models.UserSettings || mongoose.model('UserSettings', UserSettingsSchema);
+
+export const SecretModel: mongoose.Model<any> =
+  mongoose.models.Secret || mongoose.model('Secret', SecretSchema, 'secret');
 
 export async function connectMongoDB() {
   if (isConnected) return true;
@@ -112,6 +123,15 @@ export async function seedInitialDataIfEmpty() {
         userId: 'default_user',
         expenseCategories: DEFAULT_EXPENSE_CATEGORIES,
         removedCategories: [],
+      });
+    }
+
+    const secretCount = await SecretModel.countDocuments();
+    if (secretCount === 0) {
+      console.log('Seeding initial secret "2464" into MongoDB collection "secret"...');
+      await SecretModel.create({
+        name: 'site_secret',
+        value: '2464',
       });
     }
   } catch (err) {
